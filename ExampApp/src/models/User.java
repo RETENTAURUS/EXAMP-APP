@@ -2,11 +2,11 @@ package models;
 
 public class User {
     private String name;
-    private String userClass;
+    private String User;
 
-    public User(String name, String userClass) {
+    public User(String name, String User) {
         this.name = name;
-        this.userClass = userClass;
+        this.User = User;
     }
 
     public String getName() {
@@ -17,16 +17,16 @@ public class User {
         this.name = name;
     }
 
-    public String getUserClass() {
-        return userClass;
+    public String getUser() {
+        return User;
     }
 
-    public void setUserClass(String userClass) {
-        this.userClass = userClass;
+    public void setUser(String User) {
+        this.User = User;
     }
 
     public void displayUser() {
         System.out.println("User Name: " + name);
-        System.out.println("Class: " + userClass);
+        System.out.println("Whos Am i: " + User);
     }
 }
