@@ -1,121 +1,135 @@
 package main;
 
+import java.util.List;
+
+import javax.swing.*;
+import java.awt.*;
 import java.sql.*;
 import java.util.*;
 import models.*;
 import utils.DatabaseConnection;
 
-public class ExamApp {
-    public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
+public class ExamApp extends JFrame {
+    private Connection koneksi;
+    private List<String> daftarUjian = new ArrayList<>();
+    private Map<Integer, String> passwordUjian = new HashMap<>();
+    private JComboBox<String> ujianComboBox;
+    private JTextField namaField;
+    private JPasswordField passwordField;
+    private CardLayout cardLayout;
+    private JPanel mainPanel;
 
-        try (Connection koneksi = DatabaseConnection.getConnection()) {
-            List<String> daftarUjian = new ArrayList<>();
-            Map<Integer, String> passwordUjian = new HashMap<>();
-            Statement stmt = koneksi.createStatement();
-            ResultSet hasil = stmt.executeQuery("SELECT id, name, password FROM exams");
+    public ExamApp() {
+        setTitle("Exam App");
+        setSize(600, 400);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setResizable(false);
+        cardLayout = new CardLayout();
 
-            while (hasil.next()) {
-                daftarUjian.add(hasil.getString("name"));
-                passwordUjian.put(hasil.getInt("id"), hasil.getString("password"));
-            }
+        // Panel utama dengan BorderLayout
+        mainPanel = new JPanel(new BorderLayout());
 
-            System.out.println("=== Selamat Datang di Aplikasi Ujian ===");
-            System.out.println("Daftar Ujian:");
-            for (int i = 0; i < daftarUjian.size(); i++) {
-                System.out.println((i + 1) + ". " + daftarUjian.get(i));
-            }
-
-            System.out.print("\nPilih ujian dengan memasukkan nomor: ");
-            int indeksUjianTerpilih = scanner.nextInt() - 1;
-            scanner.nextLine();
-
-            if (indeksUjianTerpilih < 0 || indeksUjianTerpilih >= daftarUjian.size()) {
-                System.out.println("Pilihan tidak valid. Keluar...");
-                return;
-            }
-
-            String ujianTerpilih = daftarUjian.get(indeksUjianTerpilih);
-            int idUjianTerpilih = indeksUjianTerpilih + 1;
-            String passwordUjianTerpilih = passwordUjian.get(idUjianTerpilih);
-            System.out.println("\nAnda memilih: " + ujianTerpilih);
-            System.out.print("\nMasukkan nama lengkap Anda: ");
-            String namaLengkap = scanner.nextLine();
-
-            boolean autentikasi = false;
-            int percobaan = 0;
-
-            while (!autentikasi && percobaan < 3) {
-                System.out.print("Masukkan password ujian: ");
-                String password = scanner.nextLine();
-
-                if (password.equals(passwordUjianTerpilih)) {
-                    autentikasi = true;
-                } else {
-                    percobaan++;
-                    System.out.println("Password salah. Silakan coba lagi.");
-                }
-            }
-
-            if (!autentikasi) {
-                System.out.println("Terlalu banyak percobaan yang gagal. Keluar...");
-                return;
-            }
-
-            List<Pertanyaan> daftarPertanyaan = ambilPertanyaanDariDatabase(koneksi, idUjianTerpilih);
-            System.out.println("=== Pertanyaan Ujian ===");
-            double skorTotal = 0;
-            double skorMaksimum = 0;
-            List<String> jawabanUser = new ArrayList<>();
-            List<String> jawabanBenar = new ArrayList<>();
-
-            for (Pertanyaan pertanyaan : daftarPertanyaan) {
-                pertanyaan.tampilkanPertanyaan();
-                System.out.print("Jawaban Anda: ");
-                String jawabanUserSaatIni = scanner.nextLine();
-                jawabanUser.add(jawabanUserSaatIni);
-                skorMaksimum += pertanyaan.getSkor();
-
-                if (pertanyaan instanceof PilihanGanda) {
-                    jawabanBenar.add(((PilihanGanda) pertanyaan).getJawabanBenar());
-                } else if (pertanyaan instanceof Esai) {
-                    jawabanBenar.add(((Esai) pertanyaan).getJawabanBenar());
-                }
-
-                if (pertanyaan.validasiJawaban(jawabanUserSaatIni)) {
-                    skorTotal += pertanyaan.getSkor();
-                }
-            }
-
-            double skorAkhir = (skorTotal / skorMaksimum) * 100;
-
-            String jawabanJson = formatJawaban(jawabanUser, jawabanBenar);
-            PreparedStatement simpanPengguna = koneksi.prepareStatement(
-                    "INSERT INTO users (name, exam_id, answers, final_score) VALUES (?, ?, ?, ?)");
-            simpanPengguna.setString(1, namaLengkap);
-            simpanPengguna.setInt(2, idUjianTerpilih);
-            simpanPengguna.setString(3, jawabanJson);
-            simpanPengguna.setDouble(4, skorAkhir);
-            simpanPengguna.executeUpdate();
-
-            System.out.println("\n=== Ulasan Ujian ===");
-            for (int i = 0; i < daftarPertanyaan.size(); i++) {
-                Pertanyaan pertanyaan = daftarPertanyaan.get(i);
-                System.out.println("Pertanyaan " + (i + 1) + ": " + pertanyaan.getTeksPertanyaan());
-                System.out.println("Jawaban Anda: " + jawabanUser.get(i));
-                System.out.println("Jawaban Benar: " + jawabanBenar.get(i));
-                System.out.println();
-            }
-
-            System.out.println("=== Ujian Selesai ===");
-            System.out.println("Skor Akhir Anda: " + skorAkhir + " / 100");
-            System.out.println("Terima kasih telah mengikuti ujian!");
+        try {
+            koneksi = DatabaseConnection.getConnection();
+            loadExamsFromDatabase();
         } catch (SQLException e) {
-            e.printStackTrace();
+            showErrorDialog("Error saat mengakses database: " + e.getMessage());
+            System.exit(1);
+        }
+
+        // Menambahkan panel header dan konten utama
+        mainPanel.add(createHeaderPanel(), BorderLayout.NORTH);
+        JPanel contentPanel = new JPanel(cardLayout);
+
+        // Tambahkan Dashboard Panel
+        contentPanel.add(new Dashboard(cardLayout, contentPanel), "Dashboard");
+        contentPanel.add(createExamSelectionPanel(), "ExamSelection");
+
+        mainPanel.add(contentPanel, BorderLayout.CENTER);
+
+        add(mainPanel);
+        cardLayout.show(contentPanel, "Dashboard");
+    }
+
+    private JPanel createHeaderPanel() {
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBackground(new Color(30, 144, 255));
+        headerPanel.setPreferredSize(new Dimension(600, 100));
+
+        JLabel titleLabel = new JLabel("Welcome to Exam App", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 28));
+        titleLabel.setForeground(Color.WHITE);
+        headerPanel.add(titleLabel, BorderLayout.CENTER);
+
+        return headerPanel;
+    }
+
+    private JPanel createExamSelectionPanel() {
+        JPanel examPanel = new JPanel(new GridLayout(6, 1, 10, 10));
+        examPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        examPanel.add(new JLabel("Pilih Ujian:", SwingConstants.CENTER));
+        ujianComboBox = new JComboBox<>(daftarUjian.toArray(new String[0]));
+        examPanel.add(ujianComboBox);
+
+        examPanel.add(new JLabel("Nama Lengkap:"));
+        namaField = new JTextField();
+        examPanel.add(namaField);
+
+        examPanel.add(new JLabel("Password Ujian:"));
+        passwordField = new JPasswordField();
+        examPanel.add(passwordField);
+
+        JButton startButton = new JButton("Mulai Ujian");
+        startButton.addActionListener(e -> startExam());
+        examPanel.add(startButton);
+
+        JButton backButton = new JButton("Kembali ke Dashboard");
+        backButton.addActionListener(e -> cardLayout.show((Container) mainPanel.getComponent(1), "Dashboard"));
+        examPanel.add(backButton);
+
+        return examPanel;
+    }
+
+    private void loadExamsFromDatabase() throws SQLException {
+        Statement stmt = koneksi.createStatement();
+        ResultSet hasil = stmt.executeQuery("SELECT id, name, password FROM exams");
+
+        while (hasil.next()) {
+            daftarUjian.add(hasil.getString("name"));
+            passwordUjian.put(hasil.getInt("id"), hasil.getString("password"));
         }
     }
 
-    private static List<Pertanyaan> ambilPertanyaanDariDatabase(Connection koneksi, int idUjian) throws SQLException {
+    private void startExam() {
+        int selectedExamIndex = ujianComboBox.getSelectedIndex();
+        String selectedExam = daftarUjian.get(selectedExamIndex);
+        int examId = selectedExamIndex + 1;
+        String examPassword = passwordUjian.get(examId);
+        String namaLengkap = namaField.getText();
+        String password = new String(passwordField.getPassword());
+
+        if (namaLengkap.isEmpty() || password.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Nama dan password harus diisi!", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (!password.equals(examPassword)) {
+            JOptionPane.showMessageDialog(this, "Password salah!", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Load questions and start the quiz
+        try {
+            List<Pertanyaan> daftarPertanyaan = ambilPertanyaanDariDatabase(koneksi, examId);
+            startQuiz(daftarPertanyaan, namaLengkap, examId);
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error saat mengambil pertanyaan: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private List<Pertanyaan> ambilPertanyaanDariDatabase(Connection koneksi, int idUjian) throws SQLException {
         List<Pertanyaan> daftarPertanyaan = new ArrayList<>();
         PreparedStatement stmt = koneksi.prepareStatement(
                 "SELECT question_text, score, options, correct_answer, type FROM questions WHERE exam_id = ?");
@@ -139,19 +153,38 @@ public class ExamApp {
         return daftarPertanyaan;
     }
 
-    private static String formatJawaban(List<String> jawabanUser, List<String> jawabanBenar) {
-        StringBuilder json = new StringBuilder();
-        json.append("[");
-        for (int i = 0; i < jawabanUser.size(); i++) {
-            json.append("{");
-            json.append("\"jawabanUser\": \"").append(jawabanUser.get(i)).append("\",");
-            json.append("\"jawabanBenar\": \"").append(jawabanBenar.get(i)).append("\"");
-            json.append("}");
-            if (i < jawabanUser.size() - 1) {
-                json.append(",");
+    private void startQuiz(List<Pertanyaan> daftarPertanyaan, String namaLengkap, int examId) {
+        double skorTotal = 0;
+        double skorMaksimum = 0;
+
+        for (Pertanyaan pertanyaan : daftarPertanyaan) {
+            String jawaban = JOptionPane.showInputDialog(this, pertanyaan.getTeksPertanyaan(), "Soal Ujian", JOptionPane.QUESTION_MESSAGE);
+            skorMaksimum += pertanyaan.getSkor();
+            if (pertanyaan.validasiJawaban(jawaban)) {
+                skorTotal += pertanyaan.getSkor();
             }
         }
-        json.append("]");
-        return json.toString();
+
+        double skorAkhir = (skorTotal / skorMaksimum) * 100;
+        JOptionPane.showMessageDialog(this, "Ujian selesai!\nSkor Anda: " + skorAkhir + "/100", "Hasil Ujian", JOptionPane.INFORMATION_MESSAGE);
+        
+        // Simpan skor ke database
+        try {
+            PreparedStatement stmt = koneksi.prepareStatement(
+                    "INSERT INTO users (name, exam_id, answers, final_score) VALUES (?, ?, ?, ?)");
+            stmt.setString(1, namaLengkap);
+            stmt.setInt(2, examId);
+            stmt.setString(3, "{}"); // Placeholder jawaban
+            stmt.setDouble(4, skorAkhir);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error saat menyimpan data: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
+
+    private void showErrorDialog(String message) {
+        JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
+    }
+
+    
 }
