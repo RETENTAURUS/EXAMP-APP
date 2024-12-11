@@ -2,12 +2,9 @@ package admin;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.sql.*;
-import java.util.Arrays;
 
 import utils.DatabaseConnection;
 
@@ -15,8 +12,8 @@ public class AdminAppGUI extends JFrame {
     private Connection koneksi;
 
     public AdminAppGUI() {
-        setTitle("Panel Admin");
-        setSize(800, 600);
+        setTitle("ADMIN PANEL");
+        setSize(900, 650);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null); // Pusatkan jendela
         setLayout(new BorderLayout());
@@ -24,16 +21,17 @@ public class AdminAppGUI extends JFrame {
         // Warna utama dan aksen
         Color primaryColor = new Color(33, 150, 243); // Biru
         Color accentColor = new Color(255, 255, 255); // Putih
-        Color backgroundColor = new Color(245, 245, 245); // Abu-abu terang
 
         // Header
-        JLabel headerLabel = new JLabel("Admin Panel", SwingConstants.CENTER);
+        JLabel imageLabel = new JLabel(new ImageIcon("ExampApp/icon/logo2.png"));
+        JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER)); // Gunakan FlowLayout
+        headerPanel.add(imageLabel);
+        JLabel headerLabel = new JLabel();
         headerLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
         headerLabel.setOpaque(true);
-        headerLabel.setBackground(primaryColor);
-        headerLabel.setForeground(accentColor);
         headerLabel.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
-        add(headerLabel, BorderLayout.NORTH);
+        headerPanel.add(headerLabel);
+        add(headerPanel, BorderLayout.NORTH);
 
         // Mencoba menghubungkan ke database
         try {
@@ -47,18 +45,17 @@ public class AdminAppGUI extends JFrame {
         // Menu Panel
         JPanel menuPanel = new JPanel();
         menuPanel.setLayout(new GridLayout(4, 2, 15, 15));
-        menuPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        menuPanel.setBackground(backgroundColor);
+        menuPanel.setBorder(BorderFactory.createEmptyBorder(80, 80, 80, 80));
 
         // Tombol dengan action listener
-        JButton tambahUjianButton = createStyledButton("Tambah Ujian", primaryColor, accentColor, e -> tambahUjian());
-        JButton lihatUjianButton = createStyledButton("Lihat Daftar Ujian", primaryColor, accentColor, e -> lihatDaftarUjian());
-        JButton ubahUjianButton = createStyledButton("Ubah Ujian", primaryColor, accentColor, e -> ubahUjian());
-        JButton hapusUjianButton = createStyledButton("Hapus Ujian", primaryColor, accentColor, e -> hapusUjian());
-        JButton tambahSoalButton = createStyledButton("Tambah Soal", primaryColor, accentColor, e -> tambahSoal());
-        JButton lihatSoalButton = createStyledButton("Lihat Daftar Soal", primaryColor, accentColor, e -> lihatDaftarSoal());
-        JButton ubahSoalButton = createStyledButton("Ubah Soal", primaryColor, accentColor, e -> ubahSoal());
-        JButton hapusSoalButton = createStyledButton("Hapus Soal", primaryColor, accentColor, e -> hapusSoal());
+        JButton tambahUjianButton = createStyledButton("TAMBAH UJIAN", primaryColor, accentColor, e -> tambahUjian());
+        JButton lihatUjianButton = createStyledButton("LIHAT DAFTAR UJIAN", primaryColor, accentColor, e -> lihatDaftarUjian());
+        JButton ubahUjianButton = createStyledButton("UBAH UJIAN", primaryColor, accentColor, e -> ubahUjian());
+        JButton hapusUjianButton = createStyledButton("HAPUS UJIAN", primaryColor, accentColor, e -> hapusUjian());
+        JButton tambahSoalButton = createStyledButton("TAMBAH SOAL", primaryColor, accentColor, e -> tambahSoal());
+        JButton lihatSoalButton = createStyledButton("LIHAT DAFTAR SOAL", primaryColor, accentColor, e -> lihatDaftarSoal());
+        JButton ubahSoalButton = createStyledButton("UBAH SOAL", primaryColor, accentColor, e -> ubahSoal());
+        JButton hapusSoalButton = createStyledButton("HAPUS SOAL", primaryColor, accentColor, e -> hapusSoal());
 
         menuPanel.add(tambahUjianButton);
         menuPanel.add(lihatUjianButton);
@@ -84,18 +81,34 @@ public class AdminAppGUI extends JFrame {
 
     private JButton createStyledButton(String text, Color background, Color foreground, ActionListener actionListener) {
         JButton button = new JButton(text);
-        button.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        button.setFont(new Font("Segoe UI", Font.BOLD, 18));
         button.setBackground(background);
         button.setForeground(foreground);
         button.setFocusPainted(false);
         button.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(background.darker(), 2),
-                BorderFactory.createEmptyBorder(10, 20, 10, 20)
+                BorderFactory.createEmptyBorder(12, 24, 12, 24)
         ));
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         button.addActionListener(actionListener);
+        button.setContentAreaFilled(false); // Menghilangkan area isi tombol
+        button.setOpaque(true); // Mengaktifkan pengisian latar belakang tombol
+        button.setBackground(background);
+        button.setForeground(foreground);
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(background.brighter());
+                button.setForeground(new Color(255, 255, 255));
+            }
+    
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(background);
+                button.setForeground(foreground);
+            }
+        });
         return button;
     }
+
     private void tambahUjian() {
         // Membuat JFrame untuk dialog tambah ujian
         JFrame frame = new JFrame("Tambah Ujian");
@@ -118,9 +131,13 @@ public class AdminAppGUI extends JFrame {
         // Membuat tombol tambah
         JButton submitButton = new JButton("Tambah");
         submitButton.setBounds(140, 100, 90, 30);
+        submitButton.setForeground(Color.WHITE);
+        submitButton.setBackground(new Color(33, 150, 243));
     
         // Membuat tombol batal
         JButton cancelButton = new JButton("Batal");
+        cancelButton.setForeground(Color.WHITE);
+        cancelButton.setBackground(new Color(33, 150, 243));
         cancelButton.setBounds(250, 100, 90, 30);
     
         // Menambahkan komponen ke JFrame
@@ -221,6 +238,8 @@ public class AdminAppGUI extends JFrame {
     
         // Tombol submit
         JButton submitButton = new JButton("Ubah");
+        submitButton.setForeground(Color.WHITE);
+        submitButton.setBackground(new Color(33, 150, 243));
         submitButton.addActionListener(e -> {
             String idText = idField.getText().trim();
             String judul = judulField.getText().trim();
@@ -271,12 +290,15 @@ public class AdminAppGUI extends JFrame {
         JFrame frame = new JFrame("Hapus Ujian");
         frame.setSize(300, 200);
         frame.setLayout(new FlowLayout());
+        frame.setLocationRelativeTo(null);
 
         JTextField idField = new JTextField(10);
         frame.add(new JLabel("ID Ujian:"));
         frame.add(idField);
 
         JButton submitButton = new JButton("Hapus");
+        submitButton.setForeground(Color.WHITE);
+        submitButton.setBackground(new Color(33, 150, 243));
         submitButton.addActionListener(e -> {
             try {
                 int id = Integer.parseInt(idField.getText());
@@ -326,10 +348,14 @@ public class AdminAppGUI extends JFrame {
 
     // Membuat tombol Tambah
     JButton submitButton = new JButton("Tambah");
+    submitButton.setForeground(Color.WHITE);
+    submitButton.setBackground(new Color(33, 150, 243));
     panel.add(submitButton);
     
     // Membuat tombol Batal
     JButton cancelButton = new JButton("Batal");
+    cancelButton.setForeground(Color.WHITE);
+    cancelButton.setBackground(new Color(33, 150, 243));
     panel.add(cancelButton);
     
     // Menambahkan aksi untuk tombol Tambah
@@ -384,6 +410,8 @@ private void lihatDaftarSoal() {
 
     JTextField idUjianField = new JTextField(10);
     JButton submitButton = new JButton("Lihat Soal");
+    submitButton.setForeground(Color.WHITE);
+    submitButton.setBackground(new Color(33, 150, 243));
     
     // Column names for the table
     String[] columnNames = {"ID", "Teks Soal", "Skor", "Tipe", "Jawaban Benar", "Opsi"};
@@ -460,10 +488,14 @@ private void lihatDaftarSoal() {
     
         // Membuat tombol Ubah
         JButton submitButton = new JButton("Ubah");
+        submitButton.setForeground(Color.WHITE);
+        submitButton.setBackground(new Color(33, 150, 243));
         panel.add(submitButton);
         
         // Membuat tombol Batal
         JButton cancelButton = new JButton("Batal");
+        cancelButton.setForeground(Color.WHITE);
+        cancelButton.setBackground(new Color(33, 150, 243));
         panel.add(cancelButton);
         
         // Menambahkan aksi untuk tombol Ubah
@@ -511,12 +543,16 @@ private void lihatDaftarSoal() {
         JFrame frame = new JFrame("Hapus Soal");
         frame.setSize(300, 200);
         frame.setLayout(new FlowLayout());
+        frame.setLocationRelativeTo(null);
+
 
         JTextField idField = new JTextField(10);
         frame.add(new JLabel("ID Soal:"));
         frame.add(idField);
 
         JButton submitButton = new JButton("Hapus");
+        submitButton.setForeground(Color.WHITE);
+        submitButton.setBackground(new Color(33, 150, 243));
         submitButton.addActionListener(e -> {
             try {
                 int id = Integer.parseInt(idField.getText());
