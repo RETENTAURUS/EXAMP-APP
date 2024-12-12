@@ -1,8 +1,10 @@
 package main;
 
-import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionListener;
+import java.sql.*;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import utils.DatabaseConnection;
 
 public class Dashboard extends JPanel {
     public Dashboard(CardLayout cardLayout, Container parentContainer) {
@@ -16,19 +18,16 @@ public class Dashboard extends JPanel {
         gbc.insets = new Insets(10, 10, 10, 10);
         gbc.anchor = GridBagConstraints.CENTER;
 
-        // Start Exam Button
         JButton startExamButton = createButton("Start Exam", new Color(34, 139, 34));
         startExamButton.addActionListener(e -> cardLayout.show(parentContainer, "ExamSelection"));
         gbc.gridy = 0;
         buttonPanel.add(startExamButton, gbc);
 
-        // View Results Button
         JButton viewResultsButton = createButton("View Results", new Color(70, 130, 180));
-        viewResultsButton.addActionListener(e -> JOptionPane.showMessageDialog(this, "Results Displayed!"));
+        viewResultsButton.addActionListener(e -> viewResults());
         gbc.gridy = 1;
         buttonPanel.add(viewResultsButton, gbc);
 
-        // Exit Button
         JButton exitButton = createButton("Exit", Color.RED);
         exitButton.addActionListener(e -> System.exit(0));
         gbc.gridy = 2;
@@ -48,11 +47,67 @@ public class Dashboard extends JPanel {
         return button;
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            ExamApp app = new ExamApp();
-            app.setVisible(true);
-        });
+    private void viewResults() {
+        JFrame frame = new JFrame("View Results");
+        frame.setSize(800, 400);
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        frame.setLayout(new BorderLayout());
+
+        String[] columnNames = { "Name", "Exam ID", "Answers", "Final Score", "Exam Time" };
+
+        DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+
+        JTable table = new JTable(model);
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.setFocusable(false);
+        table.setRowSelectionAllowed(true);
+        table.getTableHeader().setReorderingAllowed(false);
+
+        JScrollPane scrollPane = new JScrollPane(table);
+
+        try (Connection connection = DatabaseConnection.getConnection();
+                Statement stmt = connection.createStatement();
+                ResultSet rs = stmt
+                        .executeQuery("SELECT name, exam_id, answers, final_score, exam_time FROM peserta")) {
+
+            while (rs.next()) {
+                String name = rs.getString("name");
+                int examId = rs.getInt("exam_id");
+                String answers = rs.getString("answers");
+                double score = rs.getDouble("final_score");
+                Timestamp examTime = rs.getTimestamp("exam_time");
+
+                model.addRow(new Object[] { name, examId, answers, score, examTime });
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(frame, "Error fetching results: " + e.getMessage(), "Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+
+        frame.add(scrollPane, BorderLayout.CENTER);
+
+        JButton closeButton = new JButton("Close");
+        closeButton.addActionListener(e -> frame.dispose());
+        frame.add(closeButton, BorderLayout.SOUTH);
+
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
     }
 
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            JFrame frame = new JFrame("Dashboard");
+            frame.setSize(400, 300);
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.setLayout(new CardLayout());
+            frame.add(new Dashboard((CardLayout) frame.getContentPane().getLayout(), frame.getContentPane()));
+            frame.setLocationRelativeTo(null);
+            frame.setVisible(true);
+        });
+    }
 }

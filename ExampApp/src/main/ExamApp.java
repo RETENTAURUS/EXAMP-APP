@@ -1,11 +1,11 @@
 package main;
 
-import java.util.List;
-
-import javax.swing.*;
 import java.awt.*;
 import java.sql.*;
 import java.util.*;
+import java.util.List;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import models.*;
 import utils.DatabaseConnection;
 
@@ -27,7 +27,6 @@ public class ExamApp extends JFrame {
         setResizable(false);
         cardLayout = new CardLayout();
 
-        // Panel utama dengan BorderLayout
         mainPanel = new JPanel(new BorderLayout());
 
         try {
@@ -38,11 +37,9 @@ public class ExamApp extends JFrame {
             System.exit(1);
         }
 
-        // Menambahkan panel header dan konten utama
         mainPanel.add(createHeaderPanel(), BorderLayout.NORTH);
         JPanel contentPanel = new JPanel(cardLayout);
 
-        // Tambahkan Dashboard Panel
         contentPanel.add(new Dashboard(cardLayout, contentPanel), "Dashboard");
         contentPanel.add(createExamSelectionPanel(), "ExamSelection");
 
@@ -103,6 +100,8 @@ public class ExamApp extends JFrame {
     }
 
     private void startExam() {
+        System.out.println("Memulai ujian...");
+
         int selectedExamIndex = ujianComboBox.getSelectedIndex();
         String selectedExam = daftarUjian.get(selectedExamIndex);
         int examId = selectedExamIndex + 1;
@@ -120,13 +119,236 @@ public class ExamApp extends JFrame {
             return;
         }
 
-        // Load questions and start the quiz
+        System.out.println("Ujian dimulai untuk examId: " + examId);
+
         try {
+
+            int timeLimit = 0;
+            PreparedStatement stmt = koneksi.prepareStatement("SELECT time_limit FROM exams WHERE id = ?");
+            stmt.setInt(1, examId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                timeLimit = rs.getInt("time_limit");
+            }
+
             List<Pertanyaan> daftarPertanyaan = ambilPertanyaanDariDatabase(koneksi, examId);
-            startQuiz(daftarPertanyaan, namaLengkap, examId);
+            if (daftarPertanyaan.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Tidak ada soal untuk ujian ini!", "Error",
+                        JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            showExamWindow(daftarPertanyaan, namaLengkap, examId, timeLimit);
         } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Error saat mengambil pertanyaan: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error saat mengambil soal atau waktu: " + e.getMessage(), "Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    private void showExamWindow(List<Pertanyaan> daftarPertanyaan, String namaLengkap, int examId, int timeLimit) {
+        JFrame ujianPanel = new JFrame("Ujian");
+        ujianPanel.setSize(800, 600);
+        ujianPanel.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        ujianPanel.setLayout(new BorderLayout());
+
+        JLabel timerLabel = new JLabel("Waktu Tersisa: " + timeLimit + " menit", SwingConstants.CENTER);
+        timerLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        ujianPanel.add(timerLabel, BorderLayout.NORTH);
+
+        JPanel questionPanel = new JPanel();
+        questionPanel.setLayout(new BoxLayout(questionPanel, BoxLayout.Y_AXIS));
+        questionPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JScrollPane scrollPane = new JScrollPane(questionPanel);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        ujianPanel.add(scrollPane, BorderLayout.CENTER);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout());
+        JButton finishButton = new JButton("Selesai Ujian");
+        buttonPanel.add(finishButton);
+        ujianPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        Map<Pertanyaan, Object> jawabanPeserta = new LinkedHashMap<>();
+        int nomorSoal = 1;
+        for (Pertanyaan pertanyaan : daftarPertanyaan) {
+            JPanel singleQuestionPanel = new JPanel();
+            singleQuestionPanel.setLayout(new BoxLayout(singleQuestionPanel, BoxLayout.Y_AXIS));
+            singleQuestionPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+            singleQuestionPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+            JLabel numberLabel = new JLabel("Soal " + nomorSoal + ":");
+            numberLabel.setFont(new Font("Arial", Font.BOLD, 16));
+            singleQuestionPanel.add(numberLabel);
+
+            JLabel questionLabel = new JLabel("<html>" + pertanyaan.getTeksPertanyaan() + "</html>");
+            questionLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+            singleQuestionPanel.add(questionLabel);
+
+            if (pertanyaan instanceof PilihanGanda) {
+                PilihanGanda pg = (PilihanGanda) pertanyaan;
+                ButtonGroup group = new ButtonGroup();
+                JPanel optionsPanel = new JPanel(new GridLayout(pg.getOpsi().length, 1));
+                optionsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+                for (String opsi : pg.getOpsi()) {
+                    JRadioButton optionButton = new JRadioButton(opsi);
+                    group.add(optionButton);
+                    optionsPanel.add(optionButton);
+                }
+                jawabanPeserta.put(pertanyaan, group);
+                singleQuestionPanel.add(optionsPanel);
+
+            } else if (pertanyaan instanceof Esai) {
+                JTextArea essayAnswerField = new JTextArea(3, 20);
+                essayAnswerField.setLineWrap(true);
+                essayAnswerField.setWrapStyleWord(true);
+                JScrollPane essayScrollPane = new JScrollPane(essayAnswerField);
+                essayScrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
+                jawabanPeserta.put(pertanyaan, essayAnswerField);
+                singleQuestionPanel.add(essayScrollPane);
+            }
+
+            questionPanel.add(singleQuestionPanel);
+            questionPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+
+            nomorSoal++;
+        }
+
+        Thread timerThread = new Thread(() -> {
+            int timer = timeLimit * 60;
+            try {
+                while (timer > 0) {
+                    int minutes = timer / 60;
+                    int seconds = timer % 60;
+                    timerLabel.setText(String.format("Waktu Tersisa: %02d:%02d", minutes, seconds));
+                    Thread.sleep(1000);
+                    timer--;
+                }
+
+                JOptionPane.showMessageDialog(ujianPanel, "Waktu ujian telah habis!", "Ujian Selesai",
+                        JOptionPane.WARNING_MESSAGE);
+                finishExam(daftarPertanyaan, jawabanPeserta, namaLengkap, examId, ujianPanel);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        });
+
+        timerThread.start();
+
+        finishButton
+                .addActionListener(e -> finishExam(daftarPertanyaan, jawabanPeserta, namaLengkap, examId, ujianPanel));
+
+        ujianPanel.setLocationRelativeTo(null);
+        ujianPanel.setVisible(true);
+    }
+
+    private void finishExam(List<Pertanyaan> daftarPertanyaan, Map<Pertanyaan, Object> jawabanPeserta,
+            String namaLengkap, int examId, JFrame ujianPanel) {
+        double skorTotal = 0;
+        double skorMaksimum = 0;
+        StringBuilder jawabanTeks = new StringBuilder();
+
+        for (Pertanyaan pertanyaan : daftarPertanyaan) {
+            Object jawabanComponent = jawabanPeserta.get(pertanyaan);
+            String jawaban = "";
+
+            if (pertanyaan instanceof PilihanGanda && jawabanComponent instanceof ButtonGroup) {
+                ButtonGroup group = (ButtonGroup) jawabanComponent;
+                for (Enumeration<AbstractButton> buttons = group.getElements(); buttons.hasMoreElements();) {
+                    AbstractButton button = buttons.nextElement();
+                    if (button.isSelected()) {
+                        jawaban = button.getText();
+                        break;
+                    }
+                }
+            } else if (pertanyaan instanceof Esai && jawabanComponent instanceof JTextArea) {
+                JTextArea essayAnswerField = (JTextArea) jawabanComponent;
+                jawaban = essayAnswerField.getText().trim();
+            }
+
+            skorMaksimum += pertanyaan.getSkor();
+            jawabanTeks.append(pertanyaan.getTeksPertanyaan()).append(": ").append(jawaban).append("; ");
+
+            if (pertanyaan.validasiJawaban(jawaban)) {
+                skorTotal += pertanyaan.getSkor();
+            }
+        }
+
+        double skorAkhir = (skorTotal / skorMaksimum) * 100;
+
+        try {
+            PreparedStatement stmt = koneksi.prepareStatement(
+                    "INSERT INTO peserta (name, exam_id, answers, final_score) VALUES (?, ?, ?, ?)");
+            stmt.setString(1, namaLengkap);
+            stmt.setInt(2, examId);
+            stmt.setString(3, jawabanTeks.toString().trim());
+            stmt.setDouble(4, skorAkhir);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(ujianPanel, "Error saat menyimpan hasil ujian: " + e.getMessage(), "Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+
+        JOptionPane.showMessageDialog(ujianPanel, "Ujian selesai!\nSkor Anda: " + skorAkhir + "/100", "Hasil Ujian",
+                JOptionPane.INFORMATION_MESSAGE);
+
+        ujianPanel.dispose();
+
+        showViewResult(namaLengkap, examId);
+    }
+
+    private void showViewResult(String namaLengkap, int examId) {
+        JFrame resultFrame = new JFrame("Hasil Ujian");
+        resultFrame.setSize(600, 400);
+        resultFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        resultFrame.setLayout(new BorderLayout());
+
+        JLabel headerLabel = new JLabel("Hasil Ujian", SwingConstants.CENTER);
+        headerLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        resultFrame.add(headerLabel, BorderLayout.NORTH);
+
+        JPanel resultPanel = new JPanel(new BorderLayout());
+        String[] columnNames = { "Nama", "Exam ID", "Final Score", "Answers" };
+        DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0);
+
+        try {
+            PreparedStatement stmt = koneksi.prepareStatement(
+                    "SELECT name, exam_id, final_score, answers FROM peserta WHERE name = ? AND exam_id = ?");
+            stmt.setString(1, namaLengkap);
+            stmt.setInt(2, examId);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                String name = rs.getString("name");
+                int exam = rs.getInt("exam_id");
+                double score = rs.getDouble("final_score");
+                String answers = rs.getString("answers");
+
+                tableModel.addRow(new Object[] { name, exam, score, answers });
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(resultFrame, "Error saat mengambil hasil: " + e.getMessage(), "Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+
+        JTable resultTable = new JTable(tableModel);
+        resultTable.setEnabled(false);
+        JScrollPane scrollPane = new JScrollPane(resultTable);
+        resultPanel.add(scrollPane, BorderLayout.CENTER);
+
+        resultFrame.add(resultPanel, BorderLayout.CENTER);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout());
+        JButton backButton = new JButton("Kembali ke Dashboard");
+        backButton.addActionListener(e -> {
+            resultFrame.dispose();
+            cardLayout.show(mainPanel, "Dashboard");
+        });
+        buttonPanel.add(backButton);
+
+        resultFrame.add(buttonPanel, BorderLayout.SOUTH);
+
+        resultFrame.setLocationRelativeTo(null);
+        resultFrame.setVisible(true);
     }
 
     private List<Pertanyaan> ambilPertanyaanDariDatabase(Connection koneksi, int idUjian) throws SQLException {
@@ -153,38 +375,8 @@ public class ExamApp extends JFrame {
         return daftarPertanyaan;
     }
 
-    private void startQuiz(List<Pertanyaan> daftarPertanyaan, String namaLengkap, int examId) {
-        double skorTotal = 0;
-        double skorMaksimum = 0;
-
-        for (Pertanyaan pertanyaan : daftarPertanyaan) {
-            String jawaban = JOptionPane.showInputDialog(this, pertanyaan.getTeksPertanyaan(), "Soal Ujian", JOptionPane.QUESTION_MESSAGE);
-            skorMaksimum += pertanyaan.getSkor();
-            if (pertanyaan.validasiJawaban(jawaban)) {
-                skorTotal += pertanyaan.getSkor();
-            }
-        }
-
-        double skorAkhir = (skorTotal / skorMaksimum) * 100;
-        JOptionPane.showMessageDialog(this, "Ujian selesai!\nSkor Anda: " + skorAkhir + "/100", "Hasil Ujian", JOptionPane.INFORMATION_MESSAGE);
-        
-        // Simpan skor ke database
-        try {
-            PreparedStatement stmt = koneksi.prepareStatement(
-                    "INSERT INTO users (name, exam_id, answers, final_score) VALUES (?, ?, ?, ?)");
-            stmt.setString(1, namaLengkap);
-            stmt.setInt(2, examId);
-            stmt.setString(3, "{}"); // Placeholder jawaban
-            stmt.setDouble(4, skorAkhir);
-            stmt.executeUpdate();
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Error saat menyimpan data: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
     private void showErrorDialog(String message) {
         JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
-    
 }

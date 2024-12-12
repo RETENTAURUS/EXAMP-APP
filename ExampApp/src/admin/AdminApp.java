@@ -70,10 +70,15 @@ public class AdminApp {
         String judul = scanner.nextLine();
         System.out.print("Masukkan password ujian: ");
         String password = scanner.nextLine();
+        System.out.print("Masukkan batas waktu ujian (dalam menit): ");
+        int timeLimit = scanner.nextInt();
+        scanner.nextLine();
 
-        PreparedStatement stmt = koneksi.prepareStatement("INSERT INTO exams (name, password) VALUES (?, ?)");
+        PreparedStatement stmt = koneksi
+                .prepareStatement("INSERT INTO exams (name, password, time_limit) VALUES (?, ?, ?)");
         stmt.setString(1, judul);
         stmt.setString(2, password);
+        stmt.setInt(3, timeLimit);
         stmt.executeUpdate();
         System.out.println("Ujian berhasil ditambahkan!");
     }
@@ -98,11 +103,16 @@ public class AdminApp {
         String judul = scanner.nextLine();
         System.out.print("Masukkan password baru untuk ujian: ");
         String password = scanner.nextLine();
+        System.out.print("Masukkan batas waktu baru (dalam menit): ");
+        int timeLimit = scanner.nextInt();
+        scanner.nextLine();
 
-        PreparedStatement stmt = koneksi.prepareStatement("UPDATE exams SET name = ?, password = ? WHERE id = ?");
+        PreparedStatement stmt = koneksi
+                .prepareStatement("UPDATE exams SET name = ?, password = ?, time_limit = ? WHERE id = ?");
         stmt.setString(1, judul);
         stmt.setString(2, password);
-        stmt.setInt(3, id);
+        stmt.setInt(3, timeLimit);
+        stmt.setInt(4, id);
         int barisTerubah = stmt.executeUpdate();
         if (barisTerubah > 0) {
             System.out.println("Ujian berhasil diubah!");
