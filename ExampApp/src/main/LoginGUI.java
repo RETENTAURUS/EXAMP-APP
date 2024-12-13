@@ -20,7 +20,7 @@ public class LoginGUI {
         JPanel logoPanel = new JPanel();
         logoPanel.setBackground(new Color(240, 240, 240));
         JLabel logoLabel = new JLabel();
-        logoLabel.setIcon(new ImageIcon("ExampApp/icon/logo2.png"));
+        logoLabel.setIcon(new ImageIcon("EXAMP-APP//ExampApp//icon//logo2.png"));
         logoPanel.add(logoLabel);
         panel.add(logoPanel, BorderLayout.NORTH);
 

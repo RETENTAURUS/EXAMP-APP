@@ -110,7 +110,7 @@ public class MainLauncher extends JFrame {
         JPanel panel = new JPanel(new GridLayout(3, 2, 10, 10));
         JTextField usernames = new JTextField();
         JPasswordField passwordField = new JPasswordField();
-        JComboBox<String> roleComboBox = new JComboBox<>(new String[] { "Peserta" });
+        JComboBox<String> roleComboBox = new JComboBox<>(new String[] { "participant", "admin" });
 
         panel.add(new JLabel("Username:"));
         panel.add(usernames);

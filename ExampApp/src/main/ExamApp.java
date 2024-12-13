@@ -79,10 +79,14 @@ public class ExamApp extends JFrame {
         examPanel.add(passwordField);
 
         JButton startButton = new JButton("Mulai Ujian");
+        startButton.setBackground(new Color(0, 100, 35)); // Mengatur latar belakang tombol menjadi hijau
+        startButton.setForeground(Color.WHITE); // Mengatur teks tombol menjadi putih (opsional agar terlihat jelas)
         startButton.addActionListener(e -> startExam());
         examPanel.add(startButton);
 
         JButton backButton = new JButton("Kembali ke Dashboard");
+        backButton.setBackground(Color.RED); // Mengatur latar belakang tombol menjadi merah
+        backButton.setForeground(Color.WHITE); // Mengatur teks tombol menjadi putih (opsional agar
         backButton.addActionListener(e -> cardLayout.show((Container) mainPanel.getComponent(1), "Dashboard"));
         examPanel.add(backButton);
 
@@ -150,39 +154,53 @@ public class ExamApp extends JFrame {
         ujianPanel.setSize(800, 600);
         ujianPanel.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         ujianPanel.setLayout(new BorderLayout());
-
-        JLabel timerLabel = new JLabel("Waktu Tersisa: " + timeLimit + " menit", SwingConstants.CENTER);
+    
+        // Label untuk timer
+        JLabel timerLabel = new JLabel("Waktu: " + timeLimit + " menit", SwingConstants.CENTER);
         timerLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        timerLabel.setForeground(Color.BLUE);
         ujianPanel.add(timerLabel, BorderLayout.NORTH);
-
+    
+        // Panel untuk pertanyaan
         JPanel questionPanel = new JPanel();
         questionPanel.setLayout(new BoxLayout(questionPanel, BoxLayout.Y_AXIS));
         questionPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         JScrollPane scrollPane = new JScrollPane(questionPanel);
-        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
         ujianPanel.add(scrollPane, BorderLayout.CENTER);
-
-        JPanel buttonPanel = new JPanel(new FlowLayout());
+    
+        // Panel untuk tombol
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
         JButton finishButton = new JButton("Selesai Ujian");
+        finishButton.setFont(new Font("Arial", Font.PLAIN, 16));
+        finishButton.setBackground(Color.GREEN);
+        finishButton.setPreferredSize(new Dimension(150, 40));
         buttonPanel.add(finishButton);
         ujianPanel.add(buttonPanel, BorderLayout.SOUTH);
-
+    
+        // Map untuk jawaban peserta
         Map<Pertanyaan, Object> jawabanPeserta = new LinkedHashMap<>();
         int nomorSoal = 1;
         for (Pertanyaan pertanyaan : daftarPertanyaan) {
             JPanel singleQuestionPanel = new JPanel();
             singleQuestionPanel.setLayout(new BoxLayout(singleQuestionPanel, BoxLayout.Y_AXIS));
             singleQuestionPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+            singleQuestionPanel.setBorder(BorderFactory.createTitledBorder("Pertanyaan " + nomorSoal));
+            singleQuestionPanel.setBackground(new Color(240, 240, 240));
             singleQuestionPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-
+    
             JLabel numberLabel = new JLabel("Soal " + nomorSoal + ":");
-            numberLabel.setFont(new Font("Arial", Font.BOLD, 16));
+            numberLabel.setFont(new Font("Arial", Font.BOLD, 18));
             singleQuestionPanel.add(numberLabel);
-
+    
             JLabel questionLabel = new JLabel("<html>" + pertanyaan.getTeksPertanyaan() + "</html>");
             questionLabel.setFont(new Font("Arial", Font.PLAIN, 16));
             singleQuestionPanel.add(questionLabel);
+    
+            questionPanel.add(singleQuestionPanel);
+            nomorSoal++;
 
             if (pertanyaan instanceof PilihanGanda) {
                 PilihanGanda pg = (PilihanGanda) pertanyaan;
@@ -339,6 +357,8 @@ public class ExamApp extends JFrame {
 
         JPanel buttonPanel = new JPanel(new FlowLayout());
         JButton backButton = new JButton("Kembali ke Dashboard");
+        backButton.setBackground(new Color(0,100,30));
+        backButton.setForeground(new Color(255,255,255));
         backButton.addActionListener(e -> {
             resultFrame.dispose();
             cardLayout.show(mainPanel, "Dashboard");

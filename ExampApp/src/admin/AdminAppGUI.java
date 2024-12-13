@@ -20,14 +20,9 @@ public class AdminAppGUI extends JFrame {
         Color primaryColor = new Color(33, 150, 243);
         Color accentColor = new Color(255, 255, 255);
 
-        JLabel imageLabel = new JLabel(new ImageIcon("ExampApp/icon/logo2.png"));
+        JLabel imageLabel = new JLabel(new ImageIcon("EXAMP-APP//ExampApp//icon//logo2.png"));
         JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         headerPanel.add(imageLabel);
-        JLabel headerLabel = new JLabel();
-        headerLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
-        headerLabel.setOpaque(true);
-        headerLabel.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
-        headerPanel.add(headerLabel);
         add(headerPanel, BorderLayout.NORTH);
 
         try {
@@ -106,34 +101,44 @@ public class AdminAppGUI extends JFrame {
     private void tambahUjian() {
 
         JFrame frame = new JFrame("Tambah Ujian");
-        frame.setSize(400, 200);
+        frame.setSize(400, 250);
         frame.setLayout(null);
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
+        JPanel formPanel = new JPanel(new GridLayout(3, 2, 10, 10));
+        formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    
         JLabel judulLabel = new JLabel("Judul Ujian:");
         judulLabel.setBounds(30, 20, 100, 25);
         JTextField judulField = new JTextField();
         judulField.setBounds(140, 20, 200, 25);
-
+    
         JLabel passwordLabel = new JLabel("Password Ujian:");
         passwordLabel.setBounds(30, 60, 100, 25);
         JTextField passwordField = new JTextField();
         passwordField.setBounds(140, 60, 200, 25);
-
+    
+        JLabel waktuLabel = new JLabel("Waktu Ujian (menit):");
+        waktuLabel.setBounds(30, 100, 150, 25);
+        JTextField waktuField = new JTextField();
+        waktuField.setBounds(180, 100, 160, 25);
+    
         JButton submitButton = new JButton("Tambah");
-        submitButton.setBounds(140, 100, 90, 30);
+        submitButton.setBounds(140, 140, 90, 30);
         submitButton.setForeground(Color.WHITE);
         submitButton.setBackground(new Color(33, 150, 243));
-
+    
         JButton cancelButton = new JButton("Batal");
         cancelButton.setForeground(Color.WHITE);
         cancelButton.setBackground(new Color(33, 150, 243));
-        cancelButton.setBounds(250, 100, 90, 30);
+        cancelButton.setBounds(250, 140, 90, 30);
 
-        frame.add(judulLabel);
+        frame.add(judulLabel); 
         frame.add(judulField);
         frame.add(passwordLabel);
         frame.add(passwordField);
+        frame.add(waktuLabel); 
+        frame.add(waktuField);
         frame.add(submitButton);
         frame.add(cancelButton);
 
@@ -141,6 +146,7 @@ public class AdminAppGUI extends JFrame {
             try {
                 String judul = judulField.getText();
                 String password = passwordField.getText();
+                int timeLimit = Integer.parseInt(waktuField.getText().trim());
 
                 if (judul.isEmpty() || password.isEmpty()) {
                     JOptionPane.showMessageDialog(frame, "Semua kolom harus diisi!", "Peringatan",
@@ -148,9 +154,10 @@ public class AdminAppGUI extends JFrame {
                     return;
                 }
 
-                PreparedStatement stmt = koneksi.prepareStatement("INSERT INTO exams (name, password) VALUES (?, ?)");
+                PreparedStatement stmt = koneksi.prepareStatement("INSERT INTO exams (name, password, time_limit) VALUES (?,? ,?)");
                 stmt.setString(1, judul);
                 stmt.setString(2, password);
+                stmt.setInt(3, timeLimit);
                 stmt.executeUpdate();
                 JOptionPane.showMessageDialog(frame, "Ujian berhasil ditambahkan!");
                 frame.dispose();
@@ -171,13 +178,14 @@ public class AdminAppGUI extends JFrame {
             Statement stmt = koneksi.createStatement();
             ResultSet hasil = stmt.executeQuery("SELECT * FROM exams");
 
-            DefaultTableModel model = new DefaultTableModel(new String[] { "ID", "Judul", "Password" }, 0);
+            DefaultTableModel model = new DefaultTableModel(new String[] { "ID", "Judul", "Password","time_limit" }, 0);
 
             while (hasil.next()) {
                 model.addRow(new Object[] {
                         hasil.getInt("id"),
                         hasil.getString("name"),
-                        hasil.getString("password")
+                        hasil.getString("password"),
+                        hasil.getInt("time_limit")
                 });
             }
 
@@ -194,12 +202,12 @@ public class AdminAppGUI extends JFrame {
     private void ubahUjian() {
 
         JFrame frame = new JFrame("Ubah Ujian");
-        frame.setSize(400, 250);
+        frame.setSize(400, 300);
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.setLayout(new BorderLayout());
 
-        JPanel formPanel = new JPanel(new GridLayout(3, 2, 10, 10));
-        formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        JPanel formPanel = new JPanel(new GridLayout(4, 2, 10, 10));
+        formPanel.setBorder(BorderFactory.createEmptyBorder(20, 10, 20, 10));
 
         JLabel idLabel = new JLabel("ID Ujian:");
         JTextField idField = new JTextField();
@@ -210,12 +218,17 @@ public class AdminAppGUI extends JFrame {
         JLabel passwordLabel = new JLabel("Password Baru:");
         JTextField passwordField = new JTextField();
 
+        JLabel waktuLabel = new JLabel("Waktu Baru:");
+        JTextField waktuField = new JTextField();
+
         formPanel.add(idLabel);
         formPanel.add(idField);
         formPanel.add(judulLabel);
         formPanel.add(judulField);
         formPanel.add(passwordLabel);
         formPanel.add(passwordField);
+        formPanel.add(waktuLabel);
+        formPanel.add(waktuField);
 
         JButton submitButton = new JButton("Ubah");
         submitButton.setForeground(Color.WHITE);
@@ -224,6 +237,7 @@ public class AdminAppGUI extends JFrame {
             String idText = idField.getText().trim();
             String judul = judulField.getText().trim();
             String password = passwordField.getText().trim();
+            int timeLimit = Integer.parseInt(waktuField.getText().trim());
 
             if (idText.isEmpty() || judul.isEmpty() || password.isEmpty()) {
                 JOptionPane.showMessageDialog(frame, "Semua field harus diisi!", "Error", JOptionPane.ERROR_MESSAGE);
@@ -234,10 +248,11 @@ public class AdminAppGUI extends JFrame {
                 int id = Integer.parseInt(idText);
 
                 PreparedStatement stmt = koneksi
-                        .prepareStatement("UPDATE exams SET name = ?, password = ? WHERE id = ?");
+                        .prepareStatement("UPDATE exams SET name = ?, password = ?, time_limit = ?, WHERE id = ?");
                 stmt.setString(1, judul);
                 stmt.setString(2, password);
-                stmt.setInt(3, id);
+                stmt.setInt(3, timeLimit);
+                stmt.setInt(4, id);
 
                 int barisTerubah = stmt.executeUpdate();
                 if (barisTerubah > 0) {
