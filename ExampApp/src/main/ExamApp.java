@@ -79,14 +79,14 @@ public class ExamApp extends JFrame {
         examPanel.add(passwordField);
 
         JButton startButton = new JButton("Mulai Ujian");
-        startButton.setBackground(new Color(0, 100, 35)); // Mengatur latar belakang tombol menjadi hijau
-        startButton.setForeground(Color.WHITE); // Mengatur teks tombol menjadi putih (opsional agar terlihat jelas)
+        startButton.setBackground(new Color(0, 100, 30)); // Mengatur latar belakang tombol menjadi hijau
+        startButton.setForeground(Color.WHITE); // Mengatur teks tombol menjadi putih 
         startButton.addActionListener(e -> startExam());
         examPanel.add(startButton);
 
         JButton backButton = new JButton("Kembali ke Dashboard");
         backButton.setBackground(Color.RED); // Mengatur latar belakang tombol menjadi merah
-        backButton.setForeground(Color.WHITE); // Mengatur teks tombol menjadi putih (opsional agar
+        backButton.setForeground(Color.WHITE); // Mengatur teks tombol menjadi putih
         backButton.addActionListener(e -> cardLayout.show((Container) mainPanel.getComponent(1), "Dashboard"));
         examPanel.add(backButton);
 
@@ -158,7 +158,7 @@ public class ExamApp extends JFrame {
         // Label untuk timer
         JLabel timerLabel = new JLabel("Waktu: " + timeLimit + " menit", SwingConstants.CENTER);
         timerLabel.setFont(new Font("Arial", Font.BOLD, 24));
-        timerLabel.setForeground(Color.BLUE);
+        timerLabel.setForeground(Color.BLACK);
         ujianPanel.add(timerLabel, BorderLayout.NORTH);
     
         // Panel untuk pertanyaan
@@ -175,7 +175,8 @@ public class ExamApp extends JFrame {
         buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
         JButton finishButton = new JButton("Selesai Ujian");
         finishButton.setFont(new Font("Arial", Font.PLAIN, 16));
-        finishButton.setBackground(Color.GREEN);
+        finishButton.setBackground(new Color(0, 100, 30));
+        finishButton.setForeground(new Color(255,255,255));
         finishButton.setPreferredSize(new Dimension(150, 40));
         buttonPanel.add(finishButton);
         ujianPanel.add(buttonPanel, BorderLayout.SOUTH);
