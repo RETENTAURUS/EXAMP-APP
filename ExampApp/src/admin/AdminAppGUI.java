@@ -20,7 +20,7 @@ public class AdminAppGUI extends JFrame {
         Color primaryColor = new Color(33, 150, 243);
         Color accentColor = new Color(255, 255, 255);
 
-        JLabel imageLabel = new JLabel(new ImageIcon("EXAMP-APP//ExampApp//icon//logo2.png"));
+        JLabel imageLabel = new JLabel(new ImageIcon("ExampApp/icon/logo2.png"));
         JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         headerPanel.add(imageLabel);
         add(headerPanel, BorderLayout.NORTH);
