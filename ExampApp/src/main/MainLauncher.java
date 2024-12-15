@@ -17,8 +17,8 @@ public class MainLauncher extends JFrame {
         setLayout(new BorderLayout());
         setLocationRelativeTo(null);
 
-        JLabel titleLabel = new JLabel("ExamApp Launcher", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        ImageIcon logoIcon = new ImageIcon("ExampApp/icon/logo2.png"); 
+        JLabel titleLabel = new JLabel(logoIcon, SwingConstants.CENTER);
         add(titleLabel, BorderLayout.NORTH);
 
         JPanel buttonPanel = new JPanel();
